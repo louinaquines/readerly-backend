@@ -59,4 +59,55 @@ class SchoolClassController extends Controller
         $schoolClass->delete();
         return response()->json(['message' => 'Class deleted']);
     }
+    public function enrollStudent(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required|string', // Expecting "STU-0007"
+            'school_class_id' => 'required|exists:school_classes,id'
+        ]);
+
+        // Find the user who has that specific ID
+        $user = \App\Models\User::where('student_id', $request->student_id)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'ID not found.'], 404);
+        }
+
+        // Link their student profile to the class
+        $student = \App\Models\Student::where('user_id', $user->id)->first();
+        
+        if ($student) {
+            $student->update(['school_class_id' => $request->school_class_id]);
+            return response()->json(['message' => 'Student enrolled successfully!']);
+        }
+
+        return response()->json(['message' => 'Student profile missing.'], 404);
+    }
+    public function enrollByStudentId(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required|string', // This will take "STU-0007"
+            'school_class_id' => 'required|exists:school_classes,id'
+        ]);
+
+        // Find the student by that specific ID string
+        $student = \App\Models\User::where('student_id', $request->student_id)
+                                ->where('role', 'student')
+                                ->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'Student ID not found.'], 404);
+        }
+
+        // Now link this user to the class. 
+        // Since your 'students' table has a 'user_id', we update the Student record.
+        $studentProfile = \App\Models\Student::where('user_id', $student->id)->first();
+        
+        if ($studentProfile) {
+            $studentProfile->update(['school_class_id' => $request->school_class_id]);
+            return response()->json(['message' => "Successfully enrolled {$student->name}!"]);
+        }
+
+        return response()->json(['message' => 'Student profile record missing.'], 404);
+    }
 }

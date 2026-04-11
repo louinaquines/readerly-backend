@@ -28,6 +28,7 @@ Route::middleware('auth:api')->group(function () {
 
 // Teacher only
 Route::middleware(['auth:api', 'teacher'])->group(function () {
+    Route::post('classes/enroll', [SchoolClassController::class, 'enrollStudent']);
     Route::apiResource('classes', SchoolClassController::class)
         ->parameters(['classes' => 'schoolClass']);
     Route::apiResource('classes.students', StudentController::class)
@@ -38,4 +39,5 @@ Route::middleware(['auth:api', 'teacher'])->group(function () {
     Route::put('profile/update', [AuthController::class, 'updateProfile']);
     Route::put('profile/password', [AuthController::class, 'updatePassword']);
     Route::delete('profile/delete', [AuthController::class, 'deleteAccount']);
+    Route::post('classes/enroll-student', [SchoolClassController::class, 'enrollByStudentId']);
 });
