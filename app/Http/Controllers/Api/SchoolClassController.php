@@ -61,27 +61,36 @@ class SchoolClassController extends Controller
     }
     public function enrollStudent(Request $request)
     {
+        // 1. Validate the input
         $request->validate([
-            'student_id' => 'required|string', // Expecting "STU-0007"
+            'student_id' => 'required|string', // This takes "STU-0007"
             'school_class_id' => 'required|exists:school_classes,id'
         ]);
 
-        // Find the user who has that specific ID
-        $user = \App\Models\User::where('student_id', $request->student_id)->first();
+        // 2. Find the User with that specific ID
+        $user = \App\Models\User::where('student_id', $request->student_id)
+                                ->where('role', 'student')
+                                ->first();
 
         if (!$user) {
-            return response()->json(['message' => 'ID not found.'], 404);
+            return response()->json(['message' => 'Student ID not found.'], 404);
         }
 
-        // Link their student profile to the class
-        $student = \App\Models\Student::where('user_id', $user->id)->first();
-        
-        if ($student) {
-            $student->update(['school_class_id' => $request->school_class_id]);
-            return response()->json(['message' => 'Student enrolled successfully!']);
+        // 3. Find their Student profile and link it to the class
+        $studentProfile = \App\Models\Student::where('user_id', $user->id)->first();
+
+        if (!$studentProfile) {
+            return response()->json(['message' => 'User found, but Student profile is missing.'], 404);
         }
 
-        return response()->json(['message' => 'Student profile missing.'], 404);
+        $studentProfile->update([
+            'school_class_id' => $request->school_class_id
+        ]);
+
+        return response()->json([
+            'message' => "Successfully enrolled {$user->name}!",
+            'student' => $studentProfile
+        ], 200);
     }
     public function enrollByStudentId(Request $request)
     {

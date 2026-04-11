@@ -9,20 +9,22 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+public function register(Request $request)
     {
         $request->validate([
-            'name'     => 'required|string',
-            'email'    => 'required|email|unique:users',
-            'password' => 'required|min:6',
-            'role'     => 'required|in:teacher,student',
+            'name'       => 'required|string',
+            'email'      => 'required|email|unique:users',
+            'password'   => 'required|min:6',
+            'role'       => 'required|in:teacher,student',
+            'student_id' => 'required_if:role,student|string|unique:users', // NEW: Validation
         ]);
 
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'role'     => $request->role,
+            'name'       => $request->name,
+            'email'      => $request->email,
+            'password'   => Hash::make($request->password),
+            'role'       => $request->role,
+            'student_id' => $request->student_id, // NEW: Saving the ID
         ]);
 
         $token = auth('api')->login($user);
@@ -68,14 +70,16 @@ class AuthController extends Controller
     public function updateProfile(Request $request)
     {
         $request->validate([
-            'name'   => 'required|string|max:255',
-            'avatar' => 'nullable|string',
+            'name'       => 'required|string|max:255',
+            'avatar'     => 'nullable|string',
+            'student_id' => 'nullable|string|unique:users,student_id,' . auth('api')->id(), // NEW: Validation
         ]);
 
         $user = auth('api')->user();
         $user->update([
-            'name'   => $request->name,
-            'avatar' => $request->avatar ?? $user->avatar,
+            'name'       => $request->name,
+            'avatar'     => $request->avatar ?? $user->avatar,
+            'student_id' => $request->student_id ?? $user->student_id, // NEW: Updating the ID
         ]);
 
         return response()->json($user->fresh());
