@@ -24,10 +24,16 @@ class SchoolClassController extends Controller
             'grade_level' => 'required|string',
         ]);
 
+        // Generate a unique 6-character alphanumeric code
+        do {
+            $code = strtoupper(substr(str_shuffle('ABCDEFGHJKLMNPQRSTUVWXYZ23456789'), 0, 6));
+        } while (\App\Models\SchoolClass::where('class_code', $code)->exists());
+
         $class = SchoolClass::create([
             'teacher_id'  => auth('api')->id(),
             'name'        => $request->name,
             'grade_level' => $request->grade_level,
+            'class_code'  => $code,
         ]);
 
         return response()->json($class, 201);
@@ -59,15 +65,17 @@ class SchoolClassController extends Controller
         $schoolClass->delete();
         return response()->json(['message' => 'Class deleted']);
     }
+
+    
     public function enrollStudent(Request $request)
     {
-        // 1. Validate the input
         $request->validate([
-            'student_id' => 'required|string', // This takes "STU-0007"
-            'school_class_id' => 'required|exists:school_classes,id'
+            'student_id' => 'required|string',
+            'class_code' => 'required|string|exists:school_classes,class_code',
         ]);
 
-        // 2. Find the User with that specific ID
+        $class = \App\Models\SchoolClass::where('class_code', $request->class_code)->first();
+
         $user = \App\Models\User::where('student_id', $request->student_id)
                                 ->where('role', 'student')
                                 ->first();
@@ -76,47 +84,25 @@ class SchoolClassController extends Controller
             return response()->json(['message' => 'Student ID not found.'], 404);
         }
 
-        // 3. Find their Student profile and link it to the class
         $studentProfile = \App\Models\Student::where('user_id', $user->id)->first();
 
         if (!$studentProfile) {
-            return response()->json(['message' => 'User found, but Student profile is missing.'], 404);
+            return response()->json(['message' => 'Student profile is missing.'], 404);
         }
 
-        $studentProfile->update([
-            'school_class_id' => $request->school_class_id
-        ]);
+        $studentProfile->update(['school_class_id' => $class->id]);
 
         return response()->json([
-            'message' => "Successfully enrolled {$user->name}!",
-            'student' => $studentProfile
+            'message' => "Successfully enrolled {$user->name} in {$class->name}!",
+            'student' => $studentProfile,
+            'class'   => $class,
         ], 200);
     }
+
     public function enrollByStudentId(Request $request)
     {
-        $request->validate([
-            'student_id' => 'required|string', // This will take "STU-0007"
-            'school_class_id' => 'required|exists:school_classes,id'
-        ]);
-
-        // Find the student by that specific ID string
-        $student = \App\Models\User::where('student_id', $request->student_id)
-                                ->where('role', 'student')
-                                ->first();
-
-        if (!$student) {
-            return response()->json(['message' => 'Student ID not found.'], 404);
-        }
-
-        // Now link this user to the class. 
-        // Since your 'students' table has a 'user_id', we update the Student record.
-        $studentProfile = \App\Models\Student::where('user_id', $student->id)->first();
-        
-        if ($studentProfile) {
-            $studentProfile->update(['school_class_id' => $request->school_class_id]);
-            return response()->json(['message' => "Successfully enrolled {$student->name}!"]);
-        }
-
-        return response()->json(['message' => 'Student profile record missing.'], 404);
+        return $this->enrollStudent($request);
     }
+
+    
 }

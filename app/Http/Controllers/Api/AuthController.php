@@ -9,14 +9,14 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-public function register(Request $request)
+    public function register(Request $request)
     {
         $request->validate([
             'name'       => 'required|string',
             'email'      => 'required|email|unique:users',
             'password'   => 'required|min:6',
             'role'       => 'required|in:teacher,student',
-            'student_id' => 'required_if:role,student|string|unique:users', // NEW: Validation
+            'student_id' => 'required_if:role,student|string|unique:users',
         ]);
 
         $user = User::create([
@@ -24,8 +24,19 @@ public function register(Request $request)
             'email'      => $request->email,
             'password'   => Hash::make($request->password),
             'role'       => $request->role,
-            'student_id' => $request->student_id, // NEW: Saving the ID
+            'student_id' => $request->student_id,
         ]);
+
+        // Auto-create Student profile for student registrations
+        if ($request->role === 'student') {
+            \App\Models\Student::create([
+                'name'            => $request->name,
+                'user_id'         => $user->id,
+                'school_class_id' => null,
+                'grade'           => '1',
+                'reading_level'   => 1,
+            ]);
+        }
 
         $token = auth('api')->login($user);
         return $this->respondWithToken($token, $user);
