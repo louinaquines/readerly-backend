@@ -43,3 +43,26 @@ Route::middleware(['auth:api', 'teacher'])->group(function () {
     Route::post('students/{student}/sessions', [ReadingSessionController::class, 'store']);
     Route::post('students/{student}/sessions/{session}/approve', [ReadingSessionController::class, 'approve']);
 });
+
+Route::get('/setup-seed', function () {
+    // Only run if no users exist
+    if (\App\Models\User::count() > 0) {
+        return response()->json(['message' => 'Already seeded', 'users' => \App\Models\User::count()]);
+    }
+
+    \App\Models\User::create([
+        'name' => 'Admin Teacher',
+        'email' => 'jai@teacher.com',
+        'password' => bcrypt('teacher123'),
+        'role' => 'teacher'
+    ]);
+
+    \App\Models\User::create([
+        'name' => 'Juan dela Cruz',
+        'email' => 'juan@school.ph',
+        'password' => bcrypt('student123'),
+        'role' => 'student'
+    ]);
+
+    return response()->json(['message' => 'Seeded successfully!']);
+});
