@@ -64,5 +64,13 @@ Route::get('/setup-seed', function () {
         'role' => 'student'
     ]);
 
+    Route::get('/debug-users', function () {
+    return response()->json([
+        'users' => \App\Models\User::select('id', 'email', 'role')->get(),
+        'db_connection' => config('database.default'),
+        'db_host' => config('database.connections.pgsql.host'),
+    ]);
+});
+
     return response()->json(['message' => 'Seeded successfully!']);
 });
