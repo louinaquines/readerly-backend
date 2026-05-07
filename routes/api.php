@@ -45,7 +45,6 @@ Route::middleware(['auth:api', 'teacher'])->group(function () {
 });
 
 Route::get('/setup-seed', function () {
-    // Only run if no users exist
     if (\App\Models\User::count() > 0) {
         return response()->json(['message' => 'Already seeded', 'users' => \App\Models\User::count()]);
     }
@@ -64,13 +63,13 @@ Route::get('/setup-seed', function () {
         'role' => 'student'
     ]);
 
-    Route::get('/debug-users', function () {
+    return response()->json(['message' => 'Seeded successfully!']);
+});
+
+Route::get('/debug-users', function () {
     return response()->json([
         'users' => \App\Models\User::select('id', 'email', 'role')->get(),
         'db_connection' => config('database.default'),
         'db_host' => config('database.connections.pgsql.host'),
     ]);
-});
-
-    return response()->json(['message' => 'Seeded successfully!']);
 });
