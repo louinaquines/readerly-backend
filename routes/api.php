@@ -44,32 +44,3 @@ Route::middleware(['auth:api', 'teacher'])->group(function () {
     Route::post('students/{student}/sessions/{session}/approve', [ReadingSessionController::class, 'approve']);
 });
 
-Route::get('/setup-seed', function () {
-    if (\App\Models\User::count() > 0) {
-        return response()->json(['message' => 'Already seeded', 'users' => \App\Models\User::count()]);
-    }
-
-    \App\Models\User::create([
-        'name' => 'Admin Teacher',
-        'email' => 'jai@teacher.com',
-        'password' => bcrypt('teacher123'),
-        'role' => 'teacher'
-    ]);
-
-    \App\Models\User::create([
-        'name' => 'Juan dela Cruz',
-        'email' => 'juan@school.ph',
-        'password' => bcrypt('student123'),
-        'role' => 'student'
-    ]);
-
-    return response()->json(['message' => 'Seeded successfully!']);
-});
-
-Route::get('/debug-users', function () {
-    return response()->json([
-        'users' => \App\Models\User::select('id', 'email', 'role')->get(),
-        'db_connection' => config('database.default'),
-        'db_host' => config('database.connections.pgsql.host'),
-    ]);
-});
